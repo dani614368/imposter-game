@@ -1,0 +1,30 @@
+{
+  "name": "imposter-game",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/dani614368/imposter-game#readme",
+  "bugs": {
+    "url": "https://github.com/dani614368/imposter-game/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dani614368/imposter-game.git"
+  },
+  "license": "MIT",
+  "author": "dani",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.1",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

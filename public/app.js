@@ -1,0 +1,20 @@
+const socket = io('http://localhost:8080');
+
+function sendMessage(e){
+    e.preventDefault();
+        const input = document.querySelector('input');
+
+    if(input.value){
+        socket.send(input.value);
+        input.value = "";
+    }
+}
+
+document.querySelector('form')
+        .addEventListener('submit', sendMessage);
+
+socket.on('message', (message)=>{
+    const li = document.createElement('li');
+    li.textContent = message;
+    document.querySelector('ul').appendChild(li);
+});

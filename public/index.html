@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/socket.io/socket.io.js"></script>
+
+
+        <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #eef1f5;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Chat container */
+        body {
+            padding: 15px;
+        }
+
+        form {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(700px, 100%);
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #ddd;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        input {
+            flex: 1;
+            height: 48px;
+            border: 1px solid #d5d9df;
+            border-radius: 24px;
+            padding: 0 20px;
+            font-size: 15px;
+            outline: none;
+            background: #f7f8fa;
+        }
+
+        input:focus {
+            border-color: #4f7cff;
+            background: white;
+        }
+
+        button {
+            height: 48px;
+            padding: 0 24px;
+            border: none;
+            border-radius: 24px;
+            background: #4f7cff;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #3d68df;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        ul {
+            list-style: none;
+            width: min(700px, 100%);
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            padding: 20px 10px 80px;
+        }
+
+        li {
+            width: fit-content;
+            max-width: 80%;
+            margin-bottom: 12px;
+            padding: 12px 16px;
+            border-radius: 16px 16px 16px 4px;
+            background: white;
+            color: #252a31;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        /* Scrollbar */
+        ul::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ul::-webkit-scrollbar-thumb {
+            background: #c5cad2;
+            border-radius: 10px;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            body {
+                padding: 0;
+            }
+
+            ul {
+                height: calc(100vh - 80px);
+                padding: 15px 10px 75px;
+            }
+
+            form {
+                padding: 10px;
+            }
+
+            input {
+                height: 44px;
+                font-size: 14px;
+            }
+
+            button {
+                height: 44px;
+                padding: 0 18px;
+            }
+
+            li {
+                max-width: 88%;
+                font-size: 14px;
+            }
+        }
+    </style>
+    <title>chat</title>
+</head>
+<body>
+    <form>
+        <input type="text" placeholder="message.....">
+        <button>send</button>
+    </form>
+
+    <ul></ul>
+
+    <script src="/app.js"></script>
+</body>
+</html>
