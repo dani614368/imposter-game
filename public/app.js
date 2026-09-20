@@ -1,43 +1,121 @@
 const socket = io('http://localhost:8080');
 
 
-const activity = document.querySelector('.activity');
 const msgInput = document.querySelector('#msgInput');
+const nameInput = document.querySelector('#name');
+const GameRoom = document.querySelector('#room');
+const activity = document.querySelector('.activity');
+const usersList = document.querySelector('.user-list');
+const roomList = document.querySelector('.room-list');
+const chatDisplay = document.querySelector('.chat-display');
 
 
 function sendMessage(e){
     e.preventDefault();
-        
 
-    if(msgInput.value){
-        socket.send(msgInput.value);
+        if (nameInput.value && msgInput.value && GameRoom.value){
+        socket.emit('message', {
+            name : nameInput.value,
+            text : msgInput.value
+        });
         msgInput.value = "";
     }
 }
 
-document.querySelector('form')
+function enterRoom(e) {
+    e.preventDefault();
+
+    if (nameInput.value && GameRoom.value) {
+        socket.emit('enterRoom', {
+            name: nameInput.value,
+            room: GameRoom.value
+        });
+    }
+}
+
+//for listner
+document.querySelector('.form-msg')
         .addEventListener('submit', sendMessage);
 
-socket.on('message', (message)=>{
-  activity.textContent = "";
-    const li = document.createElement('li');
-    li.textContent = message;
-    document.querySelector('ul').appendChild(li);
-});
-
-
+document.querySelector('.join-Game')
+    .addEventListener('submit', enterRoom);
 
 msgInput.addEventListener('keypress', ()=>{
-        socket.emit('activity', socket.id.substring(0, 5));
+        socket.emit('activity', nameInput.value);
 });
 
-let activityTimer;
-socket.on('activity', (name)=>{
+
+//listen for message
+socket.on('message', (message) => {
+    activity.textContent = "";
+    const { name, text, time } = message;
+    const li = document.createElement('li');
+    li.className = 'post';
+
+if (name === nameInput.value) {
+     li.className = 'post post--left';
+  }
+
+if (name !== nameInput.value && name !== 'admin') {
+        li.className = 'post post--right';
+    }
+
+if (name !== 'admin') {
+ li.innerHTML = ` <div class="post__header ${name === nameInput.value? 'post__header--use' : 'post__header--reply' }">
+                    <span class="post__header--name">${name}</span>
+                     <span class="post__header--time">${time}</span>
+                  </div>
+        <div class="post__text">${text}</div>`;
+    } else {
+
+        li.innerHTML = `<div class="post__text">${text}</div>`;
+    }
+    chatDisplay.appendChild(li);
+    chatDisplay.scrollTop = chatDisplay.scrollHeight;
+});
+
+
+let activitytimer;
+socket.on('activity',(name)=>{
     activity.textContent = `${name} is typing...`
 
-    clearTimeout(activityTimer);
-        activityTimer = setTimeout(() =>{
-            activity.textContent = "";
-        }, 3000);
-        
+    //clear after 3 seconds
+    clearTimeout(activitytimer);
+    activitytimer = setTimeout(()=>{
+        activity.textContent = "";
+    },3000);
 });
+
+socket.on(`userList`, ({users})=>{
+    showUsers(users);
+});
+
+socket.on(`roomList`, ({rooms})=>{
+    showRooms(rooms);
+});
+
+function showUsers(users){
+    usersList.textContent = '';
+    if(users){
+        usersList.innerHTML = `<em>users in ${GameRoom.value}: </em>`;
+        users.forEach((user, i)=>{
+            usersList.textContent += `${user.name}`;
+            if(users.length > 1 && i !== users.length - 1){
+                usersList.textContent += ",";
+            }
+        });
+    }
+}
+
+function showRooms(rooms){
+    roomList.textContent = '';
+    if(rooms){
+        roomList.innerHTML = '<em>Active Rooms </em>';
+        rooms.forEach((room, i)=>{
+            roomList.textContent += `${room}`;
+            if(rooms.length > 1 && i !== rooms.length - 1){
+                roomList.textContent += ",";
+            }
+        });
+    }
+}
