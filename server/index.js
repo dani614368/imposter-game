@@ -2,6 +2,9 @@ const express = require('express');
 const {Server} = require('socket.io');
 const path = require('path');
 const app = express();
+
+const ADMIN = "admin";
+
 //const port = process.env.PORT || 8080;
 
 const server = app.listen(8080, function(){
@@ -14,31 +17,141 @@ const server = app.listen(8080, function(){
 app.use(express.static(path.join(__dirname, '../public')));
 
 
+//state
+const UsersState = {
+    users: [],
+    setUsers: function(newUsersArray){
+        this.users = newUsersArray;
+    }
+}
+
+
 const io = new Server(server);
 
 io.on('connection', function(socket){
-    console.log('make socket conntact: ', socket.id);
+    console.log('make socket conntact: ',socket.id);
+// upon connection - only to user
+    socket.emit('message',buildMsg(ADMIN, 'wellcome to chate app') );
 
-//upon connection only to user
-    socket.emit('message', 'wellcome to imposter game');
 
-//upon connection to all other 
-    socket.broadcast.emit('message',`user ${socket.id.substring(0, 5)} connected`);
 
-//listening for message event
-        socket.on('message',function (message){
-            console.log('Receiveed: ',message);
-            io.emit('message', `${socket.id.substring(0, 5)}: ${message}`);
+
+socket.on('enterRoom', ({name, room})=>{
+ //leave previous room
+        const prevRoom = getUser(socket.id)?.room;
+            if(prevRoom){
+                socket.leave(prevRoom);
+                io.to(prevRoom).emit('message', buildMsg(ADMIN, `${name} hase left the room`));
+            }
+        const user = activateUser(socket.id, name, room);
+        
+//can not update previous room user list until after the state update in activev user
+
+            if(prevRoom){
+                io.to(prevRoom).emit('userLiset', {
+                    users: getuserInRoom(prevRoom)
+                });
+            }
+//join room
+            socket.join(user.room);
+//to user how joined
+    socket.emit('message', buildMsg(ADMIN, `you have joined the ${user.room} game room`));
+//to everyone else
+        socket.broadcast.to(user.room).emit('message', buildMsg(ADMIN, `${user.name} has joined the room`));
+//update user list for room 
+io.to(user.room).emit('userList', {
+    users: getuserInRoom(user.room)
+});
+
+//update rooms list for everyone
+        io.emit('roomList', {
+        rooms: getAllActiveRooms()
+    });
+});
+
+
+
+//when the user disconnect-to all other
+socket.on('disconnect', () => {
+    const user = getUser(socket.id);
+    userLeaveaGame(socket.id);
+
+if (user) {
+     io.to(user.room).emit('message',buildMsg(ADMIN, `${user.name} has left the room`));
+        io.to(user.room).emit('userList', {
+            users: getuserInRoom(user.room)
         });
-
-//whan user disconnect to other
-        socket.on('disconnect', ()=>{
-            socket.broadcast.emit('message',`user ${socket.id.substring(0, 5)} disconnected`);
+        io.emit('roomList', {
+            rooms: getAllActiveRooms()
         });
-
-//listen for activity
-        socket.on('activity', (name)=>{
-            socket.broadcast.emit('activity',name);
-        });
+    }
 
 });
+
+
+//listening for message event
+socket.on('message', ({ name, text }) => {
+
+    const room = getUser(socket.id)?.room;
+
+    if (room) {
+        io.to(room).emit(
+            'message',
+            buildMsg(name, text)
+        );
+    }
+
+});
+
+
+//listen for activity
+socket.on('activity', (name) => {
+    const room = getUser(socket.id)?.room;
+    if (room) {
+        socket.broadcast.to(room).emit('activity', name);
+    }
+    });
+});
+
+
+function buildMsg(name, text){
+    return {
+        name,
+        text,
+        time: new Intl.DateTimeFormat('default', {
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric'
+        }).format(new Date())
+    }
+}
+
+//user functions
+
+function activateUser(id, name, room){
+    const user = {id, name, room}
+    UsersState.setUsers([
+        ...UsersState.users.filter(user => user.id !==id),
+        user
+    ]);
+    return user;
+}
+
+function userLeaveaGame(id) {
+    UsersState.setUsers(
+        UsersState.users.filter(user => user.id !== id)
+    );
+}
+
+function getUser(id){
+    return UsersState.users.find(user => user.id === id);
+    /** voting function**/
+}
+
+function getuserInRoom(room){
+    return UsersState.users.filter(user => user.room === room);
+}
+
+function getAllActiveRooms(){
+    return Array.from(new Set(UsersState.users.map(user => user.room)));
+}
