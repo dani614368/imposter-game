@@ -5,8 +5,310 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="/socket.io/socket.io.js"></script>
     <title>imposter Game</title>
-
    
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        min-height: 100vh;
+        background: #0f172a;
+        color: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    /* Main application */
+    body {
+        position: relative;
+    }
+
+    /* Join game */
+    .join-Game {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(500px, 90%);
+        background: #1e293b;
+        padding: 12px;
+        border: 1px solid #334155;
+        border-radius: 14px;
+        display: flex;
+        gap: 8px;
+        z-index: 10;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .join-Game input {
+        min-width: 0;
+        flex: 1;
+        background: #0f172a;
+        color: white;
+        border: 1px solid #334155;
+        outline: none;
+        border-radius: 9px;
+        padding: 10px 12px;
+    }
+
+    .join-Game input:focus {
+        border-color: #3b82f6;
+    }
+
+    .join-Game button,
+    .form-msg button {
+        border: none;
+        background: #2563eb;
+        color: white;
+        padding: 10px 18px;
+        border-radius: 9px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.2s;
+    }
+
+    .join-Game button:hover,
+    .form-msg button:hover {
+        background: #1d4ed8;
+    }
+
+    /* Chat area */
+    .chat-display {
+        position: fixed;
+        top: 100px;
+        left: 20px;
+        right: 280px;
+        bottom: 90px;
+
+        list-style: none;
+        padding: 20px;
+        overflow-y: auto;
+
+        background: #111827;
+        border: 1px solid #1e293b;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .chat-display li {
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        background: #1e293b;
+        border-radius: 10px;
+        width: fit-content;
+        max-width: 75%;
+        word-wrap: break-word;
+    }
+
+    /* User sidebar */
+    .user-list {
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        bottom: 90px;
+        width: 240px;
+
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 16px;
+
+        padding: 20px;
+
+        overflow-y: auto;
+
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+        color: #e2e8f0;
+    }
+
+    /* Sidebar title appearance if JS inserts text */
+    .user-list::before {
+        content: "PLAYERS";
+        display: block;
+        font-size: 13px;
+        font-weight: bold;
+        letter-spacing: 1.5px;
+        color: #60a5fa;
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #334155;
+    }
+
+    /* Room information */
+    .room-list {
+        position: fixed;
+        top: 75px;
+        left: 25px;
+
+        color: #94a3b8;
+        font-size: 13px;
+    }
+
+    /* Activity */
+    .activity {
+        position: fixed;
+        bottom: 65px;
+        left: 30px;
+
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    /* Message form */
+    .form-msg {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 280px;
+
+        display: flex;
+        gap: 10px;
+
+        background: #1e293b;
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid #334155;
+    }
+
+    .form-msg input {
+        flex: 1;
+        min-width: 0;
+
+        background: #0f172a;
+        color: white;
+
+        border: 1px solid #334155;
+        outline: none;
+
+        padding: 11px 14px;
+        border-radius: 9px;
+    }
+
+    .form-msg input:focus {
+        border-color: #3b82f6;
+    }
+
+    /* Scrollbars */
+    .chat-display::-webkit-scrollbar,
+    .user-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-display::-webkit-scrollbar-thumb,
+    .user-list::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 10px;
+    }
+
+    /* Mobile */
+    @media (max-width: 700px) {
+
+        body {
+            padding: 10px;
+        }
+
+        .join-Game {
+            top: 10px;
+            width: calc(100% - 20px);
+        }
+
+        .join-Game input {
+            width: 30%;
+        }
+
+        .join-Game button {
+            padding: 10px 13px;
+        }
+
+        .chat-display {
+            top: 90px;
+            left: 10px;
+            right: 10px;
+            bottom: 150px;
+        }
+
+        /* User sidebar becomes a top/bottom compact panel */
+        .user-list {
+            top: auto;
+            left: 10px;
+            right: 10px;
+            bottom: 85px;
+            width: auto;
+            height: 55px;
+
+            padding: 8px 12px;
+
+            overflow-x: auto;
+            overflow-y: hidden;
+
+            white-space: nowrap;
+        }
+
+        .user-list::before {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .room-list {
+            top: 68px;
+            left: 15px;
+        }
+
+        .activity {
+            display: none;
+        }
+
+        .form-msg {
+            left: 10px;
+            right: 10px;
+            bottom: 15px;
+        }
+
+        .form-msg button {
+            padding: 10px 15px;
+        }
+    }
+
+    /* Very small screens */
+    @media (max-width: 420px) {
+
+        .join-Game {
+            gap: 5px;
+        }
+
+        .join-Game input {
+            padding: 9px 8px;
+            font-size: 12px;
+        }
+
+        .join-Game button {
+            padding: 9px 10px;
+        }
+
+        .chat-display {
+            padding: 12px;
+        }
+
+        .form-msg {
+            gap: 5px;
+        }
+
+        .form-msg input {
+            padding: 10px;
+        }
+    }
+</style>
+
+
 </head>
 <body>
 <form class="join-Game">
@@ -17,9 +319,11 @@
 
 <ul class="chat-display"></ul>
 
+
 <p class="user-list"></p>
 <p class="room-list"></p>
 <p class="activity"></p>
+<p class="secret-word"></p>
 
 <form class="form-msg">
     <input id="msgInput" type="text" placeholder="message...">

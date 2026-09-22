@@ -8,6 +8,12 @@ const activity = document.querySelector('.activity');
 const usersList = document.querySelector('.user-list');
 const roomList = document.querySelector('.room-list');
 const chatDisplay = document.querySelector('.chat-display');
+const secretWord = document.querySelector('.secret-word');
+
+
+socket.on('secretWord', ({word}) => {
+    secretWord.textContent = `Your secret word: ${word}`;
+});
 
 
 function sendMessage(e){
@@ -24,12 +30,12 @@ function sendMessage(e){
 
 function enterRoom(e) {
     e.preventDefault();
-
+    
     if (nameInput.value && GameRoom.value) {
         socket.emit('enterRoom', {
             name: nameInput.value,
             room: GameRoom.value
-        });
+        }); 
     }
 }
 
@@ -40,6 +46,7 @@ document.querySelector('.form-msg')
 document.querySelector('.join-Game')
     .addEventListener('submit', enterRoom);
 
+     
 msgInput.addEventListener('keypress', ()=>{
         socket.emit('activity', nameInput.value);
 });
@@ -106,6 +113,10 @@ function showUsers(users){
         });
     }
 }
+
+
+
+
 
 function showRooms(rooms){
     roomList.textContent = '';

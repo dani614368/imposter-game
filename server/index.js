@@ -5,6 +5,14 @@ const app = express();
 
 const ADMIN = "admin";
 
+const words1 = [
+            ["apple", "fruie"],
+            ["car", "vehicle"],
+            ["house", "place"], 
+            ["computer", "device"]
+            ];
+
+
 //const port = process.env.PORT || 8080;
 
 const server = app.listen(8080, function(){
@@ -27,6 +35,10 @@ const UsersState = {
 
 
 const io = new Server(server);
+
+
+
+
 
 io.on('connection', function(socket){
     console.log('make socket conntact: ',socket.id);
@@ -61,7 +73,16 @@ socket.on('enterRoom', ({name, room})=>{
 //update user list for room 
 io.to(user.room).emit('userList', {
     users: getuserInRoom(user.room)
+    
 });
+
+//players number 
+const players = getuserInRoom(user.room);
+
+if (players.length === 5) {
+    giveSecretWords(user.room);
+}
+
 
 //update rooms list for everyone
         io.emit('roomList', {
@@ -113,7 +134,8 @@ socket.on('activity', (name) => {
     });
 });
 
-
+//message buliding
+ 
 function buildMsg(name, text){
     return {
         name,
@@ -154,4 +176,41 @@ function getuserInRoom(room){
 
 function getAllActiveRooms(){
     return Array.from(new Set(UsersState.users.map(user => user.room)));
+}
+
+//secretWord
+function giveSecretWords(room) {
+
+    const players = getuserInRoom(room);
+
+    console.log("Players in room:", players.length);
+    console.log("Players:", players.map(player => player.name));
+
+    const randomWord1 = words1[Math.floor(Math.random() * words1.length)];
+    const imposterIndex = Math.floor(Math.random() * players.length);
+
+    console.log("Selected words:", randomWord1);
+    console.log("Imposter:", players[imposterIndex].name);
+
+    players.forEach((player, index) => {
+
+        if (index === imposterIndex) {
+
+            console.log(player.name, "->", randomWord1[1]);
+
+            io.to(player.id).emit('secretWord', {
+                word: randomWord1[1]
+            });
+
+        } else {
+
+            console.log(player.name, "->", randomWord1[0]);
+
+            io.to(player.id).emit('secretWord', {
+                word: randomWord1[0]
+            });
+
+        }
+
+    });
 }
