@@ -105,12 +105,9 @@ function showUsers(users){
     usersList.textContent = '';
     if(users){
         usersList.innerHTML = `<em>users in ${GameRoom.value}: </em>`;
-        users.forEach((user, i)=>{
-            usersList.textContent += `${user.name}`;
-            if(users.length > 1 && i !== users.length - 1){
-                usersList.textContent += ",";
-            }
-        });
+users.forEach((user) => {
+    usersList.innerHTML += `<div>${user.name}</div>`;
+});
     }
 }
 

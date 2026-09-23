@@ -6,10 +6,12 @@ const app = express();
 const ADMIN = "admin";
 
 const words1 = [
-            ["apple", "fruie"],
-            ["car", "vehicle"],
-            ["house", "place"], 
-            ["computer", "device"]
+            ["apple", "you are imposter"],
+            ["car", "you are imposter"],
+            ["phone", "you are imposter"], 
+            ["computer", "you are imposter"],
+            ["banana", "you are imposter"],
+            ["bus", "you are imposter"]
             ];
 
 
@@ -43,7 +45,7 @@ const io = new Server(server);
 io.on('connection', function(socket){
     console.log('make socket conntact: ',socket.id);
 // upon connection - only to user
-    socket.emit('message',buildMsg(ADMIN, 'wellcome to chate app') );
+    socket.emit('message',buildMsg(ADMIN, 'Wellcome to Imposter Game') );
 
 
 
