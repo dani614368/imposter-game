@@ -135,7 +135,7 @@ socket.on('activity', (name) => {
 
 
 
-// READY FOR VOTING
+
 //createing ready for voting aprovale process
 socket.on('readyForVoting', () => {
     const user = getUser(socket.id);
