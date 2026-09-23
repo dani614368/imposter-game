@@ -297,3 +297,31 @@
             padding: 10px;
         }
     }
+
+
+    .secret-word {
+    position: fixed;
+    top: 75px;
+    right: 280px;
+
+    padding: 10px 16px;
+
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+
+    color: #60a5fa;
+    font-size: 16px;
+    font-weight: bold;
+
+    z-index: 5;
+}
+
+@media (max-width: 700px) {
+    .secret-word {
+        top: 68px;
+        right: 15px;
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+}
