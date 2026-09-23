@@ -9,11 +9,23 @@ const usersList = document.querySelector('.user-list');
 const roomList = document.querySelector('.room-list');
 const chatDisplay = document.querySelector('.chat-display');
 const secretWord = document.querySelector('.secret-word');
-
+const startVoting =document.querySelector('#startVoting');
 
 socket.on('secretWord', ({word}) => {
     secretWord.textContent = `Your secret word: ${word}`;
 });
+
+//add voting listner from startVoting
+
+startVoting.addEventListener('click', () => {
+    socket.emit('readyForVoting');
+});
+
+socket.on('startVoting', () => {
+    window.location.href = '/voting.html';
+});
+
+
 
 
 function sendMessage(e){
@@ -110,10 +122,6 @@ users.forEach((user) => {
 });
     }
 }
-
-
-
-
 
 function showRooms(rooms){
     roomList.textContent = '';

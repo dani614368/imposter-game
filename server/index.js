@@ -2,9 +2,7 @@ const express = require('express');
 const {Server} = require('socket.io');
 const path = require('path');
 const app = express();
-
 const ADMIN = "admin";
-
 const words1 = [
             ["apple", "you are imposter"],
             ["car", "you are imposter"],
@@ -38,7 +36,7 @@ const UsersState = {
 
 const io = new Server(server);
 
-
+const votingReady = {};
 
 
 
@@ -134,7 +132,33 @@ socket.on('activity', (name) => {
         socket.broadcast.to(room).emit('activity', name);
     }
     });
+
+
+
+// READY FOR VOTING
+//createing ready for voting aprovale process
+socket.on('readyForVoting', () => {
+    const user = getUser(socket.id);
+    if (!user) return;
+
+    const room = user.room;
+
+    if (!votingReady[room]) {
+        votingReady[room] = new Set();
+    }
+ votingReady[room].add(socket.id);
+    const players = getuserInRoom(room);
+    console.log(
+        `Voting ready: ${votingReady[room].size}/${players.length}`
+    );
+
+if (players.length === 5 && votingReady[room].size === 5) {
+        io.to(room).emit('startVoting');
+        delete votingReady[room];
+    }
+    });
 });
+
 
 //message buliding
  
