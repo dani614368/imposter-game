@@ -1,12 +1,31 @@
-<!DOCTYPE html>
+ 
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="voting.css">
+    <title>Imposter Game - Voting</title>
 </head>
+
 <body>
-    <h1>Coming soon!!</h1>
+
+    <div class="voting-container">
+
+        <h1>Vote</h1>
+
+        <p>Who do you think is the Imposter?</p>
+
+        <div class="players-list"></div>
+
+        <button id="voteButton">Vote</button>
+
+    </div>
+
+    <script src="voting.js"></script>
+
 </body>
+
 </html>
 

@@ -94,19 +94,9 @@ if (players.length === 5) {
 
 //when the user disconnect-to all other
 socket.on('disconnect', () => {
-    const user = getUser(socket.id);
-    userLeaveaGame(socket.id);
-
-if (user) {
-     io.to(user.room).emit('message',buildMsg(ADMIN, `${user.name} has left the room`));
-        io.to(user.room).emit('userList', {
-            users: getuserInRoom(user.room)
-        });
-        io.emit('roomList', {
-            rooms: getAllActiveRooms()
-        });
-    }
-
+const user = getUser(socket.id);
+    if (!user) return;
+ console.log(`${user.name} disconnected`);
 });
 
 
@@ -156,6 +146,19 @@ if (players.length === 5 && votingReady[room].size === 5) {
         io.to(room).emit('startVoting');
         delete votingReady[room];
     }
+    });
+
+
+//get player for voting page
+socket.on('getVotingPlayers', (room) => {
+console.log('Room received for voting:', room);
+    const players = getuserInRoom(room);
+
+    console.log("Voting players:", players.map(user => user.name));
+
+    socket.emit('votingPlayers', {
+        users: players
+        });
     });
 });
 

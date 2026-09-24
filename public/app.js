@@ -21,11 +21,10 @@ startVoting.addEventListener('click', () => {
     socket.emit('readyForVoting');
 });
 
+
 socket.on('startVoting', () => {
-    window.location.href = '/voting.html';
+    window.location.href = `/voting.html?room=${GameRoom.value}`;
 });
-
-
 
 
 function sendMessage(e){
