@@ -38,7 +38,7 @@ const io = new Server(server);
 
 const votingReady = {};
 const votes = {};
-
+const voters = {};
 
 
 io.on('connection', function(socket){
@@ -177,30 +177,42 @@ socket.on('votePlayer', ({ playerId }) => {
     console.log('Current votes:', votes);
 
 
-    // Find player with the most votes
-    let eliminatedPlayer = null;
-    let highestVotes = 0;
+    // Count how many votes we received
+    if (!voters.count) {
+        voters.count = 0;
+    }
 
-    for (const id in votes) {
+    voters.count++;
 
-        if (votes[id] > highestVotes) {
-            highestVotes = votes[id];
-            eliminatedPlayer = id;
+    console.log(`Votes received: ${voters.count}/5`);
+
+
+    // Wait until all 5 players have voted
+    if (voters.count === 5) {
+
+        let eliminatedPlayer = null;
+        let highestVotes = 0;
+
+        for (const id in votes) {
+
+            if (votes[id] > highestVotes) {
+                highestVotes = votes[id];
+                eliminatedPlayer = id;
+            }
+
         }
 
+        const player = UsersState.users.find(
+            user => user.id === eliminatedPlayer
+        );
+
+        if (player) {
+            console.log('Player with most votes:', player.name);
+            console.log('Votes:', highestVotes);
+        }
     }
 
-
-    const player = UsersState.users.find(
-        user => user.id === eliminatedPlayer
-    );
-
-    if (player) {
-        console.log('Player with most votes:', player.name);
-        console.log('Votes:', highestVotes);
-    }
-
-}); 
+});
 
 });
 
