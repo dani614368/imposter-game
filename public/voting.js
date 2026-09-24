@@ -50,5 +50,10 @@ voteButton.addEventListener('click', () => {
         return;
     }
 
+     const playerId = selectedPlayer.value;
     console.log('Voting for:', selectedPlayer.value);
+
+   socket.emit('votePlayer', {
+        playerId: playerId
+    });
 });

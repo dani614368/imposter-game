@@ -37,6 +37,7 @@ const UsersState = {
 const io = new Server(server);
 
 const votingReady = {};
+const votes = {};
 
 
 
@@ -160,6 +161,47 @@ console.log('Room received for voting:', room);
         users: players
         });
     });
+
+
+// received voting player from the voting page
+socket.on('votePlayer', ({ playerId }) => {
+
+    console.log('Vote received for:', playerId);
+
+    if (!votes[playerId]) {
+        votes[playerId] = 0;
+    }
+
+    votes[playerId]++;
+
+    console.log('Current votes:', votes);
+
+
+    // Find player with the most votes
+    let eliminatedPlayer = null;
+    let highestVotes = 0;
+
+    for (const id in votes) {
+
+        if (votes[id] > highestVotes) {
+            highestVotes = votes[id];
+            eliminatedPlayer = id;
+        }
+
+    }
+
+
+    const player = UsersState.users.find(
+        user => user.id === eliminatedPlayer
+    );
+
+    if (player) {
+        console.log('Player with most votes:', player.name);
+        console.log('Votes:', highestVotes);
+    }
+
+}); 
+
 });
 
 
