@@ -10,6 +10,22 @@ const roomList = document.querySelector('.room-list');
 const chatDisplay = document.querySelector('.chat-display');
 const secretWord = document.querySelector('.secret-word');
 const startVoting =document.querySelector('#startVoting');
+const turnIndicator = document.querySelector('.turn-indicator');
+let myTurn = false;
+
+socket.on('turn', (playerId) => {
+    if (socket.id === playerId) {
+        myTurn = true;
+        turnIndicator.textContent = "Your turn!";
+        console.log('YOUR TURN');
+    } else {
+        myTurn = false;
+        turnIndicator.textContent = "Waiting for your turn...";
+        console.log('WAIT FOR YOUR TURN..');
+    }
+});
+
+
 
 socket.on('secretWord', ({word}) => {
     secretWord.textContent = `Your secret word: ${word}`;
@@ -29,11 +45,15 @@ socket.on('startVoting', () => {
 
 function sendMessage(e){
     e.preventDefault();
-
+    if (!myTurn) {
+        alert('It is not your turn!');
+        return;
+    }
         if (nameInput.value && msgInput.value && GameRoom.value){
         socket.emit('message', {
             name : nameInput.value,
-            text : msgInput.value
+            text : msgInput.value,
+            room: GameRoom.value
         });
         msgInput.value = "";
     }

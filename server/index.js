@@ -39,6 +39,7 @@ const io = new Server(server);
 const votingReady = {};
 const votes = {};
 const voters = {};
+const currentTurn = {};
 
 
 io.on('connection', function(socket){
@@ -89,6 +90,8 @@ const players = getuserInRoom(user.room);
 
 if (players.length === 5) {
     giveSecretWords(user.room);
+    currentTurn[user.room] = 0;
+    io.to(user.room).emit('turn', players[currentTurn[user.room]].id);
 }
 
 
@@ -109,17 +112,29 @@ const user = getUser(socket.id);
 
 
 //listening for message event
-socket.on('message', ({ name, text }) => {
-
-    const room = getUser(socket.id)?.room;
-
-    if (room) {
-        io.to(room).emit(
-            'message',
-            buildMsg(name, text)
-        );
+socket.on('message',(data) => {
+const room = data.room;
+const roomPlayers = UsersState.users.filter(
+        user => user.room === room
+    );
+    const currentPlayer = roomPlayers[currentTurn[room]];
+if (!currentPlayer) {
+        return;
     }
+if (socket.id !== currentPlayer.id) {
+        return;
+    }
+io.to(room).emit('message', buildMsg(data.name, data.text));
 
+    // Next player
+    currentTurn[room]++;
+if (currentTurn[room] >= roomPlayers.length) {
+        currentTurn[room] = 0;
+    }
+io.to(room).emit(
+        'turn',
+        roomPlayers[currentTurn[room]].id
+    );
 });
 
 
