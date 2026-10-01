@@ -50,6 +50,13 @@ io.on('connection', function(socket){
 
 
 socket.on('enterRoom', ({name, room})=>{
+    //add room size check
+    const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
+    if (roomSize >= 5) {
+        socket.emit('message', buildMsg(ADMIN, 'Room is full'));
+        return;
+    }
+
  //leave previous room
         const prevRoom = getUser(socket.id)?.room;
             if(prevRoom){
