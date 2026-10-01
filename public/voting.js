@@ -3,6 +3,11 @@ const socket = io('http://localhost:8080');
 const playersList = document.querySelector('.players-list');
 const voteButton = document.querySelector('#voteButton');
 
+socket.on('votingResult', ({ playerName, votes }) => {
+    voteResult.textContent = `Player with most votes: ${playerName} | Votes: ${votes}`;
+});
+
+
 const params = new URLSearchParams(window.location.search);
 const room = params.get('room');
 

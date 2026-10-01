@@ -231,6 +231,10 @@ socket.on('votePlayer', ({ playerId }) => {
         if (player) {
             console.log('Player with most votes:', player.name);
             console.log('Votes:', highestVotes);
+        io.emit('votingResult', {
+             playerName: player.name,
+             votes: highestVotes
+            });
         }
     }
 
