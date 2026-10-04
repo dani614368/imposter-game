@@ -1,5 +1,7 @@
 const socket = io('http://localhost:8080');
 
+let hasVoted = false;
+
 const playersList = document.querySelector('.players-list');
 const voteButton = document.querySelector('#voteButton');
 
@@ -46,6 +48,11 @@ socket.on('votingPlayers', ({ users }) => {
 
 voteButton.addEventListener('click', () => {
 
+if(hasVoted){
+    return;
+}
+
+
     const selectedPlayer = document.querySelector(
         'input[name="vote"]:checked'
     );
@@ -56,9 +63,11 @@ voteButton.addEventListener('click', () => {
     }
 
      const playerId = selectedPlayer.value;
-    console.log('Voting for:', selectedPlayer.value);
+
 
    socket.emit('votePlayer', {
         playerId: playerId
     });
+    hasVoted= true;
+    voteButton.disabled = true;
 });
