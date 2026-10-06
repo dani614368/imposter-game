@@ -11,6 +11,27 @@ const chatDisplay = document.querySelector('.chat-display');
 const secretWord = document.querySelector('.secret-word');
 const startVoting =document.querySelector('#startVoting');
 const turnIndicator = document.querySelector('.turn-indicator');
+// Retrieve saved values from session storage
+const savedName = sessionStorage.getItem('playerName');
+const savedRoom = sessionStorage.getItem('gameRoom');
+const savedSecretWord = sessionStorage.getItem('secretWord');
+
+if(savedName && savedRoom){
+    nameInput.value = savedName;
+    GameRoom.value = savedRoom;
+}
+if(savedSecretWord){
+    secretWord.textContent = `Your secret word: ${savedSecretWord}`;
+}
+
+//restore the saved name and room from session storage
+if (savedName && savedRoom) {
+    socket.emit('enterRoom', {
+        name: savedName,
+        room: savedRoom
+    });
+}
+
 let myTurn = false;
 
 socket.on('turn', (playerId) => {
@@ -29,6 +50,8 @@ socket.on('turn', (playerId) => {
 
 socket.on('secretWord', ({word}) => {
     secretWord.textContent = `Your secret word: ${word}`;
+//saving the secret word in session storage
+    sessionStorage.setItem('secretWord', word);
 });
 
 //add voting listner from startVoting
@@ -39,6 +62,10 @@ startVoting.addEventListener('click', () => {
 
 
 socket.on('startVoting', () => {
+
+    sessionStorage.setItem('playerName', nameInput.value);
+    sessionStorage.setItem('gameRoom', GameRoom.value);
+
     window.location.href = `/voting.html?room=${GameRoom.value}`;
 });
 
