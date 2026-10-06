@@ -40,6 +40,7 @@ const votingReady = {};
 const votes = {};
 const voters = {};
 const currentTurn = {};
+const eliminatedPlayers = {};
 
 
 io.on('connection', function(socket){
@@ -88,11 +89,21 @@ io.to(user.room).emit('userList', {
 //players number 
 const players = getuserInRoom(user.room);
 
-if (players.length === 5) {
+if (players.length === 5 && !eliminatedPlayers[user.room]) {
     giveSecretWords(user.room);
     currentTurn[user.room] = 0;
     io.to(user.room).emit('turn', players[currentTurn[user.room]].id);
 }
+
+//the players can chat after returning
+if (eliminatedPlayers[user.room]) {
+    const activePlayers = players.filter(player => player.name !== eliminatedPlayers[user.room]);
+    if (activePlayers.length > 0) {
+        currentTurn[user.room] = 0;
+        io.to(user.room).emit('turn', activePlayers[currentTurn[user.room]].id);
+    }
+}
+
 
 
 //update rooms list for everyone
@@ -108,12 +119,32 @@ socket.on('disconnect', () => {
 const user = getUser(socket.id);
     if (!user) return;
  console.log(`${user.name} disconnected`);
+  userLeaveaGame(socket.id);
 });
 
 
 //listening for message event
 socket.on('message',(data) => {
 const room = data.room;
+const user = getUser(socket.id);
+//if player is eliminated
+if(!user){
+    return;
+}
+//if the player is eliminated skip their turn and move to the next player
+if(eliminatedPlayers[room] === user.name){
+    console.log('Eliminated player tried to send a message:', user.name);
+        currentTurn[room]++;
+if (currentTurn[room] >= UsersState.users.filter(user => user.room === room).length) {
+        currentTurn[room] = 0;
+    }
+    const nextPlayer = UsersState.users.filter(user => user.room === room)[currentTurn[room]];
+    io.to(room).emit('turn', nextPlayer.id);
+    return;
+}
+
+
+//THE eliminated Players CAN NOT SEND MESSAGE
 const roomPlayers = UsersState.users.filter(
         user => user.room === room
     );
@@ -175,7 +206,12 @@ if (players.length === 5 && votingReady[room].size === 5) {
 //get player for voting page
 socket.on('getVotingPlayers', (room) => {
 console.log('Room received for voting:', room);
-    const players = getuserInRoom(room);
+socket.join(room);
+
+//to block the eliminated player from voting
+    const players = getuserInRoom(room).filter(
+        user => user.id !== eliminatedPlayers[room]
+    );
 
     console.log("Voting players:", players.map(user => user.name));
 
@@ -183,6 +219,11 @@ console.log('Room received for voting:', room);
         users: players
         });
     });
+
+    socket.on('leaveVotingRoom', (room) => {
+    socket.leave(room);
+    console.log(`Voting socket left room: ${room}`);
+});
 
 
 // received voting player from the voting page
@@ -231,10 +272,23 @@ socket.on('votePlayer', ({ playerId }) => {
         if (player) {
             console.log('Player with most votes:', player.name);
             console.log('Votes:', highestVotes);
-        io.emit('votingResult', {
+//eliminated player room
+        const room = player.room;
+        eliminatedPlayers[room] = player.name;
+
+        io.to(room).emit('votingResult', {
              playerName: player.name,
              votes: highestVotes
             });
+//start 5 second timer
+let countdown = 5;
+            const timer = setInterval(() => {
+                io.to(room).emit('countdown', countdown);
+                countdown--;
+                if(countdown < 0){
+                    clearInterval(timer);
+                }
+            },1000);
         }
     }
 
