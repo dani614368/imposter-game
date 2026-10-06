@@ -4,9 +4,20 @@ let hasVoted = false;
 
 const playersList = document.querySelector('.players-list');
 const voteButton = document.querySelector('#voteButton');
+const countdown = document.querySelector('#countdown');
+const voteResult = document.querySelector('#voteResult');
+
 
 socket.on('votingResult', ({ playerName, votes }) => {
     voteResult.textContent = `Player with most votes: ${playerName} | Votes: ${votes}`;
+});
+socket.on('countdown', (seconds) => {
+        countdown.textContent = `Returning to game in ${seconds} seconds...`;
+
+    if (seconds === 0) {
+        socket.emit('leaveVotingRoom', room);
+        window.location.href = '/';
+    }
 });
 
 
