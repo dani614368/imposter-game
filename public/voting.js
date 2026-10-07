@@ -74,10 +74,12 @@ if(hasVoted){
     }
 
      const playerId = selectedPlayer.value;
-
+const playerName = selectedPlayer.nextElementSibling.textContent;
 
    socket.emit('votePlayer', {
-        playerId: playerId
+        playerId: playerId,
+        playerName: playerName,
+        room: room
     });
     hasVoted= true;
     voteButton.disabled = true;

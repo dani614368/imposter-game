@@ -41,7 +41,7 @@ const votes = {};
 const voters = {};
 const currentTurn = {};
 const eliminatedPlayers = {};
-
+const votingPlayers = {};
 
 io.on('connection', function(socket){
     console.log('make socket conntact: ',socket.id);
@@ -212,6 +212,7 @@ socket.join(room);
     const players = getuserInRoom(room).filter(
         user => user.id !== eliminatedPlayers[room]
     );
+     votingPlayers[room] = players;
 
     console.log("Voting players:", players.map(user => user.name));
 
@@ -227,53 +228,58 @@ socket.join(room);
 
 
 // received voting player from the voting page
-socket.on('votePlayer', ({ playerId }) => {
+socket.on('votePlayer', ({ playerId, playerName, room }) => {
 
     console.log('Vote received for:', playerId);
+     console.log('Voting room:', room);
 
-    if (!votes[playerId]) {
-        votes[playerId] = 0;
+//cerate state for the room
+if(!votes[room]){
+    votes[room]= {};
+}
+if(!voters[room]){
+    voters[room] = 0;
+}
+//count the votes for the player
+    if (!votes[room][playerId]) {
+        votes[room][playerId] = 0;
     }
 
-    votes[playerId]++;
+    votes[room][playerId]++;
 
-    console.log('Current votes:', votes);
-
-
-    // Count how many votes we received
-    if (!voters.count) {
-        voters.count = 0;
-    }
-
-    voters.count++;
-
-    console.log(`Votes received: ${voters.count}/5`);
+    console.log('Current votes:',room,':', votes[room]);
+//count the voters for this room
+voters[room]++;
+console.log(`Votes received: ${room}: ${voters[room]}/5`);
 
 
     // Wait until all 5 players have voted
-    if (voters.count === 5) {
+    if (voters[room] === 5) {
 
         let eliminatedPlayer = null;
         let highestVotes = 0;
 
-        for (const id in votes) {
+        for (const id in votes[room]) {
 
-            if (votes[id] > highestVotes) {
-                highestVotes = votes[id];
+            if (votes[room][id] > highestVotes) {
+                highestVotes = votes[room][id];
                 eliminatedPlayer = id;
             }
 
         }
+
+        console.log('Voting players for', room, ':', votingPlayers[room]);
+        console.log('Eliminated player ID:', eliminatedPlayer);
 
         const player = UsersState.users.find(
             user => user.id === eliminatedPlayer
         );
 
         if (player) {
-            console.log('Player with most votes:', player.name);
-            console.log('Votes:', highestVotes);
+            console.log('Player with most votes:', room, player.name);
+            console.log('Votes: ', highestVotes);
 //eliminated player room
-        const room = player.room;
+  
         eliminatedPlayers[room] = player.name;
 
         io.to(room).emit('votingResult', {
