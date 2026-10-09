@@ -207,6 +207,9 @@ if (players.length === 5 && votingReady[room].size === 5) {
 socket.on('getVotingPlayers', ({room, playerName}) => {
 console.log('Room received for voting:', room);
 console.log('current voter:', playerName);
+
+ socket.data.playerName = playerName;
+
 socket.join(room);
 
 //to block the eliminated player from voting
@@ -231,77 +234,99 @@ socket.join(room);
 
 // received voting player from the voting page
 socket.on('votePlayer', ({ playerId, playerName, room }) => {
+    // Identify the player using the name saved for this voting page
+    const voterName = socket.data.playerName;
 
-    console.log('Vote received for:', playerId);
-     console.log('Voting room:', room);
-
-//cerate state for the room
-if(!votes[room]){
-    votes[room]= {};
-}
-if(!voters[room]){
-    voters[room] = 0;
-}
-//count the votes for the player
-    if (!votes[room][playerId]) {
-        votes[room][playerId] = 0;
+    if (!voterName || !room) {
+        console.log('Unknown voter');
+        return;
     }
 
-    votes[room][playerId]++;
+    // Make sure this player is registered in the voting roster
+    const voter = votingPlayers[room]?.find(
+        user => user.name === voterName
+    );
 
-    console.log('Current votes:',room,':', votes[room]);
-//count the voters for this room
-voters[room]++;
-console.log(`Votes received: ${room}: ${voters[room]}/5`);
+    if (!voter) {
+        console.log('Unknown voter:', voterName);
+        return;
+    }
 
+    if (!votes[room]) {
+        votes[room] = {};
+    }
 
-    // Wait until all 5 players have voted
-    if (voters[room] === 5) {
+    if (!voters[room]) {
+        voters[room] = new Set();
+    }
 
+    // Prevent the same player from voting twice
+    if (voters[room].has(voterName)) {
+        console.log('This player has already voted:', voterName);
+        return;
+    }
+
+    // Prevent self-voting
+    if (playerId === voter.id) {
+        console.log('Self-voting is not allowed:', voterName);
+        return;
+    }
+
+    // Validate the selected player
+    const target = votingPlayers[room].find(
+        user => user.id === playerId
+    );
+
+    if (!target || target.name === eliminatedPlayers[room]) {
+        console.log('Invalid voting target');
+        return;
+    }
+
+    // Record the vote
+    voters[room].add(voterName);
+    votes[room][playerId] = (votes[room][playerId] || 0) + 1;
+
+    console.log(
+        `Votes received in ${room}: ${voters[room].size}/5`
+    );
+
+    // Finish after all five unique players vote
+    if (voters[room].size === 5) {
         let eliminatedPlayer = null;
         let highestVotes = 0;
 
         for (const id in votes[room]) {
-
             if (votes[room][id] > highestVotes) {
                 highestVotes = votes[room][id];
                 eliminatedPlayer = id;
             }
-
         }
 
-        console.log('Voting players for', room, ':', votingPlayers[room]);
-        console.log('Eliminated player ID:', eliminatedPlayer);
-
-        const player = UsersState.users.find(
+        const player = votingPlayers[room].find(
             user => user.id === eliminatedPlayer
         );
 
-        if (player) {
-            console.log('Player with most votes:', room, player.name);
-            console.log('Votes: ', highestVotes);
-//eliminated player room
-  
+        if (!player) return;
+
         eliminatedPlayers[room] = player.name;
 
         io.to(room).emit('votingResult', {
-             playerName: player.name,
-             votes: highestVotes
-            });
-//start 5 second timer
-let countdown = 5;
-            const timer = setInterval(() => {
-                io.to(room).emit('countdown', countdown);
-                countdown--;
-                if(countdown < 0){
-                    clearInterval(timer);
-                }
-            },1000);
-        }
+            playerName: player.name,
+            votes: highestVotes
+        });
+
+        let seconds = 5;
+
+        const timer = setInterval(() => {
+            io.to(room).emit('countdown', seconds);
+            seconds--;
+
+            if (seconds < 0) {
+                clearInterval(timer);
+            }
+        }, 1000);
     }
-
-});
-
+    });
 });
 
 

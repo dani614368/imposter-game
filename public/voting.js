@@ -1,5 +1,9 @@
 const socket = io('http://localhost:8080');
 
+const params = new URLSearchParams(window.location.search);
+const room = params.get('room');
+const playerName = sessionStorage.getItem('playerName');
+
 let hasVoted = false;
 
 const playersList = document.querySelector('.players-list');
@@ -7,6 +11,9 @@ const voteButton = document.querySelector('#voteButton');
 const countdown = document.querySelector('#countdown');
 const voteResult = document.querySelector('#voteResult');
 
+
+console.log('current player: ', playerName);
+console.log('current room: ', room);
 
 socket.on('votingResult', ({ playerName, votes }) => {
     voteResult.textContent = `Player with most votes: ${playerName} | Votes: ${votes}`;
@@ -21,8 +28,8 @@ socket.on('countdown', (seconds) => {
 });
 
 
-const params = new URLSearchParams(window.location.search);
-const room = params.get('room');
+
+
 
 console.log('Voting room:', room);
 
