@@ -57,6 +57,9 @@ socket.on('secretWord', ({word}) => {
 //add voting listner from startVoting
 
 startVoting.addEventListener('click', () => {
+    sessionStorage.setItem('playerName', nameInput.value);
+    sessionStorage.setItem('gameRoom', GameRoom.value);
+    
     socket.emit('readyForVoting');
 });
 

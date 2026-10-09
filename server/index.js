@@ -204,22 +204,24 @@ if (players.length === 5 && votingReady[room].size === 5) {
 
 
 //get player for voting page
-socket.on('getVotingPlayers', (room) => {
+socket.on('getVotingPlayers', ({room, playerName}) => {
 console.log('Room received for voting:', room);
+console.log('current voter:', playerName);
 socket.join(room);
 
 //to block the eliminated player from voting
     const players = getuserInRoom(room).filter(
-        user => user.id !== eliminatedPlayers[room]
+        user => user.name !== eliminatedPlayers[room]
     );
+
+   // console.log("Voting players:", players.map(user => user.name));
      votingPlayers[room] = players;
 
-    console.log("Voting players:", players.map(user => user.name));
-
     socket.emit('votingPlayers', {
-        users: players
-        });
+        users: players,
+        voterName: playerName
     });
+});
 
     socket.on('leaveVotingRoom', (room) => {
     socket.leave(room);

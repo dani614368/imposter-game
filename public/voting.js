@@ -31,16 +31,23 @@ socket.on('connect', () => {
     console.log('Voting socket connected:', socket.id);
     console.log('Requesting players from room:', room);
 
-    socket.emit('getVotingPlayers', room);
+    socket.emit('getVotingPlayers', {
+        room: room,
+        playerName: sessionStorage.getItem('playerName')
+    });
 });
 
-socket.on('votingPlayers', ({ users }) => {
+socket.on('votingPlayers', ({ users, voterName }) => {
 
     console.log('Received players:', users);
+    console.log('current voter:', voterName);
 
     playersList.innerHTML = '';
 
     users.forEach((user) => {
+        if(user.name === voterName){
+            return;
+        }
 
         playersList.innerHTML += `
             <label class="player-card">
