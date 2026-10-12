@@ -41,6 +41,7 @@ const votes = {};
 const voters = {};
 const currentTurn = {};
 const eliminatedPlayers = {};
+const currentRound = {};
 const votingPlayers = {};
 
 io.on('connection', function(socket){
@@ -90,19 +91,24 @@ io.to(user.room).emit('userList', {
 const players = getuserInRoom(user.room);
 
 if (players.length === 5 && !eliminatedPlayers[user.room]) {
+
+    eliminatedPlayers[user.room] = [];
+    currentRound[user.room] = 1;
+
     giveSecretWords(user.room);
     currentTurn[user.room] = 0;
-    io.to(user.room).emit('turn', players[currentTurn[user.room]].id);
+    io.to(user.room).emit('turn', players[0].id);
 }
 
 //the players can chat after returning
-if (eliminatedPlayers[user.room]) {
-    const activePlayers = players.filter(player => player.name !== eliminatedPlayers[user.room]);
-    if (activePlayers.length > 0) {
+const eliminated = eliminatedPlayers[user.room] || [];
+
+const activePlayers = players.filter(player => !eliminated.includes(player.name));
+
+    if (activePlayers.length > 0 && currentRound[user.room]) {
         currentTurn[user.room] = 0;
-        io.to(user.room).emit('turn', activePlayers[currentTurn[user.room]].id);
+        io.to(user.room).emit('turn', activePlayers[0].id);
     }
-}
 
 
 
@@ -124,49 +130,48 @@ const user = getUser(socket.id);
 
 
 //listening for message event
-socket.on('message',(data) => {
-const room = data.room;
-const user = getUser(socket.id);
-//if player is eliminated
-if(!user){
-    return;
-}
-//if the player is eliminated skip their turn and move to the next player
-if(eliminatedPlayers[room] === user.name){
-    console.log('Eliminated player tried to send a message:', user.name);
-        currentTurn[room]++;
-if (currentTurn[room] >= UsersState.users.filter(user => user.room === room).length) {
-        currentTurn[room] = 0;
+
+socket.on('message', (data) => {
+    const room = data.room;
+    const user = getUser(socket.id);
+
+    if (!user) return;
+
+    // 1. Block eliminated players
+    if (eliminatedPlayers[room]?.includes(user.name)) {
+        console.log('Eliminated player cannot chat:', user.name);
+        return;
     }
-    const nextPlayer = UsersState.users.filter(user => user.room === room)[currentTurn[room]];
-    io.to(room).emit('turn', nextPlayer.id);
-    return;
-}
 
+    // 2. Get only active players
+    const eliminated = eliminatedPlayers[room] || [];
 
-//THE eliminated Players CAN NOT SEND MESSAGE
-const roomPlayers = UsersState.users.filter(
-        user => user.room === room
+    const activePlayers = getuserInRoom(room).filter(
+        player => !eliminated.includes(player.name)
     );
-    const currentPlayer = roomPlayers[currentTurn[room]];
-if (!currentPlayer) {
-        return;
-    }
-if (socket.id !== currentPlayer.id) {
-        return;
-    }
-io.to(room).emit('message', buildMsg(data.name, data.text));
 
-    // Next player
+    if (activePlayers.length === 0) return;
+
+    // 3. Check whose turn it is
+    const currentPlayer = activePlayers[currentTurn[room]];
+
+    if (!currentPlayer || socket.id !== currentPlayer.id) {
+        return;
+    }
+
+    // 4. Send the message to everyone in the room
+    io.to(room).emit('message', buildMsg(data.name, data.text));
+
+    // 5. Move to the next active player
     currentTurn[room]++;
-if (currentTurn[room] >= roomPlayers.length) {
+
+    if (currentTurn[room] >= activePlayers.length) {
         currentTurn[room] = 0;
     }
-io.to(room).emit(
-        'turn',
-        roomPlayers[currentTurn[room]].id
-    );
+
+    io.to(room).emit('turn', activePlayers[currentTurn[room]].id);
 });
+
 
 
 //listen for activity
@@ -186,21 +191,27 @@ socket.on('readyForVoting', () => {
     if (!user) return;
 
     const room = user.room;
+    const eleminated = eliminatedPlayers[room] || [];
+
+    if(eleminated.includes(user.name)){
+        console.log('eleminated player cannote: ', user.name);
+        return;
+    }
 
     if (!votingReady[room]) {
         votingReady[room] = new Set();
     }
- votingReady[room].add(socket.id);
-    const players = getuserInRoom(room);
-    console.log(
-        `Voting ready: ${votingReady[room].size}/${players.length}`
+ votingReady[room].add(user.name);
+    const activePlayers = getuserInRoom(room).filter(
+        player=> !eleminated.includes(player.name)
     );
+    console.log(`Voting ready: ${votingReady[room].size}/${activePlayers.length}`);
 
-if (players.length === 5 && votingReady[room].size === 5) {
+if (activePlayers.length > 1 && votingReady[room].size === activePlayers.length){
         io.to(room).emit('startVoting');
         delete votingReady[room];
     }
-    });
+});
 
 
 //get player for voting page
@@ -277,7 +288,7 @@ socket.on('votePlayer', ({ playerId, playerName, room }) => {
         user => user.id === playerId
     );
 
-    if (!target || target.name === eliminatedPlayers[room]) {
+    if (!target || eliminatedPlayers[room]?.includes(target.name)) {
         console.log('Invalid voting target');
         return;
     }
@@ -291,7 +302,10 @@ socket.on('votePlayer', ({ playerId, playerName, room }) => {
     );
 
     // Finish after all five unique players vote
-    if (voters[room].size === 5) {
+const activePlayers = getuserInRoom(room).filter(
+    user => !eliminatedPlayers[room]?.includes(user.name)
+);
+    if (voters[room].size ===  activePlayers.length) {
         let eliminatedPlayer = null;
         let highestVotes = 0;
 
@@ -308,7 +322,11 @@ socket.on('votePlayer', ({ playerId, playerName, room }) => {
 
         if (!player) return;
 
-        eliminatedPlayers[room] = player.name;
+        if (!eliminatedPlayers[room]){
+            eliminatedPlayers[room]= [];
+        }
+
+        eliminatedPlayers[room].push(player.name);
 
         io.to(room).emit('votingResult', {
             playerName: player.name,
@@ -373,6 +391,19 @@ function getuserInRoom(room){
 function getAllActiveRooms(){
     return Array.from(new Set(UsersState.users.map(user => user.room)));
 }
+//adding chat rounding helper functionality
+function getNextActivePlayer(room, currentPlayerId) {
+    const eliminated = eliminatedPlayers[room] || [];
+    const activePlayers = getuserInRoom(room).filter(user => !eliminated.includes(user.name));
+    if (activePlayers.length === 0) {
+        return null;
+    }
+
+    const currentIndex = activePlayers.findIndex(user => user.id === currentPlayerId);
+    const nextIndex = (currentIndex + 1) % activePlayers.length;
+    return activePlayers[nextIndex];
+}
+
 
 //secretWord
 function giveSecretWords(room) {
